@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로또 번호 생성기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d14;
+      --surface: #16161f;
+      --surface2: #1e1e2a;
+      --border: rgba(255,255,255,0.08);
+      --text: #f0f0f4;
+      --muted: #888898;
+      --accent: #7f77dd;
+      --accent-dim: rgba(127,119,221,0.15);
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #afa9ec 0%, #7f77dd 50%, #5dcaa5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+    }
+
+    .controls label {
+      font-size: 0.875rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    select {
+      flex: 1;
+      min-width: 110px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 10px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888898' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    select:focus { border-color: var(--accent); }
+
+    .gen-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 0.6rem 1.4rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .gen-btn:hover { background: #6a62c8; }
+    .gen-btn:active { transform: scale(0.97); }
+
+    .results { display: flex; flex-direction: column; gap: 10px; }
+
+    .round-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface2);
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .round-no {
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 22px;
+      font-weight: 500;
+    }
+
+    .balls-wrap {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .ball {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700;
+      flex-shrink: 0;
+      opacity: 0;
+      transform: scale(0.4);
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .ball.show { opacity: 1; transform: scale(1); }
+
+    .ball.y  { background: #fac775; color: #633806; }
+    .ball.b  { background: #b5d4f4; color: #042c53; }
+    .ball.g  { background: #c0dd97; color: #173404; }
+    .ball.r  { background: #f7c1c1; color: #501313; }
+    .ball.gr { background: #d3d1c7; color: #2c2c2a; }
+    .ball.bonus { background: #cecbf6; color: #26215c; }
+
+    .sep { color: var(--muted); font-size: 16px; }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 2rem 0 0.75rem;
+    }
+    .history-header span { font-size: 0.8rem; color: var(--muted); }
+
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .clear-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .range-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 1.5rem 1.25rem; }
+      .ball { width: 36px; height: 36px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🍀 로또 번호 생성기</h1>
+  <p>1~45 랜덤 추첨 · 행운을 빕니다!</p>
+</header>
+
+<div class="card">
+  <div class="controls">
+    <label for="countSel">게임 수</label>
+    <select id="countSel">
+      <option value="1">1게임</option>
+      <option value="3">3게임</option>
+      <option value="5" selected>5게임</option>
+      <option value="10">10게임</option>
+    </select>
+    <button class="gen-btn" id="genBtn">번호 뽑기</button>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <div id="historyWrap" style="display:none">
+    <div class="history-header">
+      <span>이전 기록</span>
+      <button class="clear-btn" id="clearBtn">지우기</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="range-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#fac775"></div>1–10</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b5d4f4"></div>11–20</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c0dd97"></div>21–30</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f7c1c1"></div>31–40</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d3d1c7"></div>41–45</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#cecbf6"></div>보너스</div>
+  </div>
+</div>
+
+<footer>skarltmd.xyz · 이 페이지는 순수 랜덤으로 번호를 생성합니다</footer>
+
+<script>
+  const colorClass = n => n<=10?'y':n<=20?'b':n<=30?'g':n<=40?'r':'gr';
+
+  function pickNums(count, exclude=[]) {
+    const pool = Array.from({length:45},(_,i)=>i+1).filter(n=>!exclude.includes(n));
+    for(let i=pool.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [pool[i],pool[j]]=[pool[j],pool[i]];
+    }
+    return pool.slice(0,count).sort((a,b)=>a-b);
+  }
+
+  function buildRow(nums, idx, animate) {
+    const row = document.createElement('div');
+    row.className = 'round-row';
+
+    const no = document.createElement('span');
+    no.className = 'round-no';
+    no.textContent = idx + 1;
+    row.appendChild(no);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'balls-wrap';
+
+    nums.main.forEach((n, j) => {
+      const b = document.createElement('div');
+      b.className = `ball ${colorClass(n)}`;
+      b.textContent = n;
+      wrap.appendChild(b);
+      if(animate) setTimeout(()=>b.classList.add('show'), j * 90);
+      else b.classList.add('show');
+    });
+
+    const sep = document.createElement('span');
+    sep.className = 'sep';
+    sep.textContent = '+';
+    wrap.appendChild(sep);
+
+    const bonus = document.createElement('div');
+    bonus.className = 'ball bonus';
+    bonus.textContent = nums.bonus;
+    wrap.appendChild(bonus);
+    if(animate) setTimeout(()=>bonus.classList.add('show'), nums.main.length * 90);
+    else bonus.classList.add('show');
+
+    row.appendChild(wrap);
+    return row;
+  }
+
+  let history = [];
+
+  document.getElementById('genBtn').addEventListener('click', () => {
+    const count = parseInt(document.getElementById('countSel').value);
+    const rounds = Array.from({length:count}, () => {
+      const main = pickNums(6);
+      const bonus = pickNums(1, main)[0];
+      return {main, bonus};
+    });
+
+    const resultsEl = document.getElementById('results');
+    resultsEl.innerHTML = '';
+    rounds.forEach((r, i) => resultsEl.appendChild(buildRow(r, i, true)));
+
+    history = [...rounds, ...history].slice(0, 50);
+    updateHistory(count);
+  });
+
+  function updateHistory(skip) {
+    const wrap = document.getElementById('historyWrap');
+    const list = document.getElementById('historyList');
+    const old = history.slice(skip);
+    if(old.length === 0) { wrap.style.display='none'; return; }
+    wrap.style.display = 'block';
+    list.innerHTML = '';
+    old.forEach((r, i) => list.appendChild(buildRow(r, i, false)));
+  }
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    history = [];
+    document.getElementById('historyWrap').style.display = 'none';
+    document.getElementById('historyList').innerHTML = '';
+  });
+</script>
+</body>
+</html>
